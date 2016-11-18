@@ -1,0 +1,52 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <script type="text/javascript" src="node_modules/bootstrap-multiselect/dist/js/bootstrap-multiselect.js"></script>
+    <link rel="stylesheet" href="node_modules/bootstrap-multiselect/dist/css/bootstrap-multiselect.css">
+    <script src="node_modules/jquery-validation/dist/jquery.validate.js"></script>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-xs-12">
+            <form action="/search" method="get" id="search">
+                <h4>Please select the country:</h4>
+                <select class="form-control multiselect" name="country" id="country" multiple="multiple" step="Any"
+                        required>
+                    {{#each countries}}
+                    <option value='{{this}}'>{{this}}</option>
+                    {{/each}}
+                </select>
+                <h4>Please select the device:</h4>
+                <select class="form-control multiselect" name="description" id="description" multiple="multiple" step="Any"
+                        required>
+                    {{#each devices}}
+                    <option value='{{this}}'>{{this}}</option>
+                    {{/each}}
+                </select>
+                <div>
+                    <button type="submit" class="btn btn-info">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    $('.multiselect').multiselect({
+        includeSelectAllOption: true
+    });
+    $('#search').validate({
+        rules: {
+            country: "required",
+            description: "required"
+        },
+        ignore: ':hidden:not(".multiselect")',
+        errorClass: 'invalid'
+    });
+</script>
+</body>
+</html>
