@@ -28,10 +28,12 @@ function handleRequests(){
     app.get('/search', function(req, res){
         var country = req.query.country, device = req.query.description
         util.getBugs(country,device, function(reply){
-            console.log(reply.bugsProperties)
+            console.log(reply)
                 var html = Handlebars.compile(fs.readFileSync('./reply.html', 'utf8'))({
                     searchCriteria: reply.searchCriterias,
-                    bugsProperties: reply.bugsProperties.split('\n').join('<br>')
+                    matches: reply.bugsProperties.prefix,
+                    body: reply.bugsProperties.body,
+                    results: reply.bugsProperties.suffix
                 })
                 res.send(html)
         })

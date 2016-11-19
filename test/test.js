@@ -202,7 +202,8 @@ describe('getSearchCriterias', function () {
     it('should return string concatenation of getSearchCriterias', function (done) {
         util.getSearchCriterias('US', 'iPhone 4', function (err, response) {
             expect(err).to.be.null
-            expect(response).to.be.equal('Country="US" and Device="iPhone 4"')
+            expect(response.header).to.be.equal('Search Criteria:')
+            expect(response.text).to.be.equal('Country="US" and Device="iPhone 4"')
             done()
         })
     })
@@ -210,15 +211,62 @@ describe('getSearchCriterias', function () {
 
 describe('getMatches', function () {
     it('should present Matches number and names, then how many bugs for each device per tester and the total bugs for tester, then Results testers names ', function (done) {
-
+        var allBugs = [
+            {
+                country: 'doesnt matter',
+                firstName: 'a1',
+                lastName: 'b1',
+                description: 'Galaxy S4',
+                testerId: 1,
+                deviceId: 'doesnt matter'
+            },
+            {
+                country: 'doesnt matter',
+                firstName: 'a1',
+                lastName: 'b1',
+                description: 'Galaxy S4',
+                testerId: 1,
+                deviceId: 'doesnt matter'
+            },
+            {
+                country: 'doesnt matter',
+                firstName: 'a1',
+                lastName: 'b1',
+                description: 'Galaxy S5',
+                testerId: 1,
+                deviceId: 'doesnt matter'
+            },
+            {
+                country: 'doesnt matter',
+                firstName: 'a1',
+                lastName: 'b1',
+                description: 'iPhone 5',
+                testerId: 1,
+                deviceId: 'doesnt matter'
+            },
+            {
+                country: 'doesnt matter',
+                firstName: 'a2',
+                lastName: 'b2',
+                description: 'Galaxy S4',
+                testerId: 2,
+                deviceId: 'doesnt matter'
+            }
+        ]
         util.getMatches(allBugs, function (err, bugsByTestersPresentation) {
             expect(err).to.be.null
-            expect(bugsByTestersPresentation.indexOf('Matches: 2 testers (a1 b1 and a2 b2)')).to.not.equal(-1)
-            expect(bugsByTestersPresentation.indexOf('a1 b1 filed 2 bugs for Galaxy S4 and 1 bugs for Galaxy S5 and 1 bugs for iPhone 5')).to.not.equal(-1)
-            expect(bugsByTestersPresentation.indexOf('4 bugs filed for devices in search.')).to.not.equal(-1)
-            expect(bugsByTestersPresentation.indexOf('a2 b2 filed 1 bugs for Galaxy S4')).to.not.equal(-1)
-            expect(bugsByTestersPresentation.indexOf('1 bugs filed for devices in search.')).to.not.equal(-1)
-            expect(bugsByTestersPresentation.indexOf('Results: a1 b1,a2 b2')).to.not.equal(-1)
+            expect(bugsByTestersPresentation).to.be.a('object')
+            expect(bugsByTestersPresentation.prefix).to.be.a('object')
+            expect(bugsByTestersPresentation.prefix.header).to.be.equal('Matches:')
+            expect(bugsByTestersPresentation.prefix.text).to.be.equal('2 testers (a1 b1 and a2 b2)')
+            expect(bugsByTestersPresentation.body).to.be.a('object')
+            expect(bugsByTestersPresentation.body.header).to.be.equal('')
+            expect(bugsByTestersPresentation.body.text).to.be.equal('a1 b1 filed 2 bugs for Galaxy S4 and 1 bugs for Galaxy S5 and 1 bugs for iPhone 5.<br>4 bugs filed for devices in search.<br>a2 b2 filed 1 bugs for Galaxy S4.<br>1 bugs filed for devices in search.<br>')
+            expect(bugsByTestersPresentation.suffix).to.be.a('object')
+            expect(bugsByTestersPresentation.suffix.header).to.be.equal('Results:')
+            expect(bugsByTestersPresentation.suffix.text).to.be.equal('a1 b1, a2 b2')
+            
+
             done()
         })
     })
@@ -273,27 +321,37 @@ describe('getBugsProperties', function () {
             expect(err).to.be.null
             expect(response).to.be.a('array')
             expect(response.length).to.be.equal(2)
-            expect(response[0]).to.be.equal('Country="US" and Device="iPhone 5"')
-            expect(response[1].indexOf('Matches: 2 testers (a1 b1 and a2 b2)')).to.not.equal(-1)
-            expect(response[1].indexOf('a1 b1 filed 2 bugs for Galaxy S4 and 1 bugs for Galaxy S5 and 1 bugs for iPhone 5')).to.not.equal(-1)
-            expect(response[1].indexOf('4 bugs filed for devices in search.')).to.not.equal(-1)
-            expect(response[1].indexOf('a2 b2 filed 1 bugs for Galaxy S4')).to.not.equal(-1)
-            expect(response[1].indexOf('1 bugs filed for devices in search.')).to.not.equal(-1)
-            expect(response[1].indexOf('Results: a1 b1,a2 b2')).to.not.equal(-1)
+            expect(response[0].header).to.be.equal('Search Criteria:')
+            expect(response[0].text).to.be.equal('Country="US" and Device="iPhone 5"')
+            expect(response[1].prefix).to.be.a('object')
+            expect(response[1].prefix.header).to.be.equal('Matches:')
+            expect(response[1].prefix.text).to.be.equal('2 testers (a1 b1 and a2 b2)')
+            expect(response[1].body).to.be.a('object')
+            expect(response[1].body.header).to.be.equal('')
+            expect(response[1].body.text).to.be.equal('a1 b1 filed 2 bugs for Galaxy S4 and 1 bugs for Galaxy S5 and 1 bugs for iPhone 5.<br>4 bugs filed for devices in search.<br>a2 b2 filed 1 bugs for Galaxy S4.<br>1 bugs filed for devices in search.<br>')
+            expect(response[1].suffix).to.be.a('object')
+            expect(response[1].suffix.header).to.be.equal('Results:')
+            expect(response[1].suffix.text).to.be.equal('a1 b1, a2 b2')
             done()
         })
     })
 })
 
-describe.only('getBugs', function(){
+describe('getBugs', function(){
     it('should return the response as an object with the searchCriterias and bugsProperties as keys', function(done){
         util.getBugs('US', 'iPhone 5', function(response){
             expect(response).to.be.a('object')
-            expect(response.searchCriterias).to.be.equal('Country="US" and Device="iPhone 5"')
-            expect(response.bugsProperties.indexOf('Matches: 1 testers (Miguel Bautista)')).to.not.equal(-1)
-            expect(response.bugsProperties.indexOf('Miguel Bautista filed 30 bugs for iPhone 5')).to.not.equal(-1)
-            expect(response.bugsProperties.indexOf('30 bugs filed for devices in search.')).to.not.equal(-1)
-            expect(response.bugsProperties.indexOf('Results: Miguel Bautista')).to.not.equal(-1)
+            expect(response.searchCriterias.header).to.be.equal('Search Criteria:')
+            expect(response.searchCriterias.text).to.be.equal('Country="US" and Device="iPhone 5"')
+            expect(response.bugsProperties.prefix).to.be.a('object')
+            expect(response.bugsProperties.prefix.header).to.be.equal('Matches:')
+            expect(response.bugsProperties.prefix.text).to.be.equal('1 testers (Miguel Bautista)')
+            expect(response.bugsProperties.body).to.be.a('object')
+            expect(response.bugsProperties.body.header).to.be.equal('')
+            expect(response.bugsProperties.body.text).to.be.equal('Miguel Bautista filed 30 bugs for iPhone 5.<br>30 bugs filed for devices in search.<br>')
+            expect(response.bugsProperties.suffix).to.be.a('object')
+            expect(response.bugsProperties.suffix.header).to.be.equal('Results:')
+            expect(response.bugsProperties.suffix.text).to.be.equal('Miguel Bautista')
             done()
         })
     })

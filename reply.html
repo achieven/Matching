@@ -6,20 +6,18 @@
     <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
 </head>
 <body>
-    <div class="container">
-        <div class="row">
-            <div class="col-xs-12">
-                <label> Search Criteria:</label>
-                {{searchCriteria}}
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-xs-12">
-                <label> Bugs properties:</label>
-                {{{bugsProperties}}}
-            </div>
+<div class="container">
+    {{#each this}}
+    <div class="row">
+        <div class="col-xs-12">
+            <u>{{this.header}}</u>
+            {{{this.text}}}
+
         </div>
     </div>
+    {{/each}}
+
+</div>
 
 </body>
 </html>

@@ -5,6 +5,14 @@ var db = new sqlite.Database('matching')
 const _ = require('underscore')
 const async = require('async')
 
+const Handlebars = require('handlebars')
+Handlebars.registerHelper('equal', function(v1, v2, options) {
+    if(v1 === v2) {
+        return options.fn(this);
+    }
+    return options.inverse(this);
+});
+
 var util = {
     initializeDB: function () {
         db.serialize(function () {
@@ -89,16 +97,6 @@ var util = {
             callback(results)
         })
     },
-    getBugsFromDB: function (testerCountry, deviceDescription, callback) {
-        var mandatorySelectionQuery = 'SELECT testers.country, devices.description, bugs.testerId, bugs.deviceId FROM testers, devices, bugs WHERE bugs.testerId=testers.testerId AND bugs.deviceId=devices.deviceId'
-        var countrySelectorQuery = this.selectorQuery('testers', 'country', testerCountry)
-        var deviceSelectorQuery = this.selectorQuery('devices', 'description', deviceDescription)
-        var bugsQuery = 'SELECT testers.country, testers.firstName, testers.lastName, devices.description, bugs.testerId, bugs.deviceId FROM testers, devices, bugs WHERE bugs.testerId=testers.testerId AND bugs.deviceId=devices.deviceId ' + countrySelectorQuery + deviceSelectorQuery
-        db.all(bugsQuery, function (err, allBugs) {
-            if (err) return callback(err)
-            callback(null, testerCountry, deviceDescription, allBugs)
-        })
-    },
     selectorQuery: function (table, field, values) {
         if (values === 'All') {
             return ''
@@ -160,13 +158,12 @@ var util = {
                     criteriasForPresentation += ' and '
                 }
             })
-            callback(null, criteriasForPresentation)
+            callback(null, {header: 'Search Criteria:', text: criteriasForPresentation})
         })
     },
     getMatches: function(allBugs, callback){
         var bugsByTesters = {}
         var testersCounter = 0, testersNames = []
-        var testersNamesPreffix = ''
         function createAllTestersObject(){
             allBugs.forEach(function(bug){
                 if(!(bugsByTesters[bug.testerId])){
@@ -191,14 +188,14 @@ var util = {
             return bugsByTesters
         }
         
-        function bugsByTestersSuffix (bugsByTesters){
-            var bugsByTestersPresentation = ''
+        function bugsByTestersBody (bugsByTesters){
+            var bugsByTestersBody = ''
             for(var testerId in bugsByTesters){
                 testersCounter++
                 var thisTester = bugsByTesters[testerId]
                 var testerName = thisTester.name
                 testersNames.push(thisTester.name)
-                bugsByTestersPresentation += testerName + ' filed '
+                bugsByTestersBody += testerName + ' filed '
                 var bugsByTesterForDevices = ''
                 var testerBugsPerDevice = thisTester['bugsForDevices']
                 var testerDevices = Object.keys(testerBugsPerDevice)
@@ -208,30 +205,32 @@ var util = {
                         bugsByTesterForDevices += ' and '
                     }
                     if(index === testerDevices.length - 1){
-                        bugsByTesterForDevices += '.\n    ' + thisTester.totalBugs + ' bugs filed for devices in search.\n    '
+                        bugsByTesterForDevices += '.<br>' + thisTester.totalBugs + ' bugs filed for devices in search.<br>'
                     }
                 })
-                bugsByTestersPresentation += bugsByTesterForDevices + '\n   '
+                bugsByTestersBody += bugsByTesterForDevices
             }
-            bugsByTestersPresentation += 'Results: ' + testersNames
-            return bugsByTestersPresentation
+            return bugsByTestersBody
         }
         
         
-        function bugsByTestersPrefix(){
+        function bugsByTestersPrefixSuffix(){
+            var testersNamesPreffix = ''
+            var testersNameSuffix = ''
             testersNames.forEach(function(tester, index){
                 testersNamesPreffix += tester
+                testersNameSuffix += tester
                 if(index < testersNames.length -1) {
                     testersNamesPreffix += ' and '
+                    testersNameSuffix += ', '
                 }
             })
-            return 'Matches: ' + testersCounter + ' testers (' + testersNamesPreffix + ')\n    '
+            return {prefix: testersCounter + ' testers (' + testersNamesPreffix + ')', suffix: testersNameSuffix}
         }
         var bugsByTesters = createAllTestersObject()
-        var bugsByTestersSuffix = bugsByTestersSuffix(bugsByTesters)
-        bugsByTestersPrefix = bugsByTestersPrefix()
-        var bugsByTestersFullPresentation = bugsByTestersPrefix + bugsByTestersSuffix
-        callback(null, bugsByTestersFullPresentation)
+        var bugsByTestersBody = bugsByTestersBody(bugsByTesters)
+        bugsByTestersPrefixSuffix = bugsByTestersPrefixSuffix()
+        callback(null, {prefix: {header: 'Matches:', text: bugsByTestersPrefixSuffix.prefix}, body: {header: '', text: bugsByTestersBody}, suffix: {header: 'Results:', text: bugsByTestersPrefixSuffix.suffix}})
     },
     getBugsProperties: function(testerCountry, deviceDescription, allBugs, callback){
         async.parallel([
@@ -240,6 +239,16 @@ var util = {
         ], function(err, results){
             if(err) return callback(err)
             callback(null, results)
+        })
+    },
+    getBugsFromDB: function (testerCountry, deviceDescription, callback) {
+        var mandatorySelectionQuery = 'SELECT testers.country, devices.description, bugs.testerId, bugs.deviceId FROM testers, devices, bugs WHERE bugs.testerId=testers.testerId AND bugs.deviceId=devices.deviceId'
+        var countrySelectorQuery = this.selectorQuery('testers', 'country', testerCountry)
+        var deviceSelectorQuery = this.selectorQuery('devices', 'description', deviceDescription)
+        var bugsQuery = 'SELECT testers.country, testers.firstName, testers.lastName, devices.description, bugs.testerId, bugs.deviceId FROM testers, devices, bugs WHERE bugs.testerId=testers.testerId AND bugs.deviceId=devices.deviceId ' + countrySelectorQuery + deviceSelectorQuery
+        db.all(bugsQuery, function (err, allBugs) {
+            if (err) return callback(err)
+            callback(null, testerCountry, deviceDescription, allBugs)
         })
     },
     getBugs: function (testerCountry, deviceDescription, callback) {
