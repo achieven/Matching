@@ -13,14 +13,12 @@ function showWebsiteOnScreen(){
         console.log('listening on port 3000')
     })
     app.get('/', function(req, res){
-        util.getAllCountries(function(countries){
-            util.getAllDevices(function(devices){
-                var html = Handlebars.compile(fs.readFileSync('./app.html', 'utf8'))({
-                    countries: countries,
-                    devices: devices
-                })
-                res.send(html)
+        util.getValues(function(properties){
+            var html = Handlebars.compile(fs.readFileSync('./app.html', 'utf8'))({
+                countries: properties[0],
+                devices: properties[1]
             })
+            res.send(html)
         })
     })
 }
@@ -30,11 +28,12 @@ function handleRequests(){
     app.get('/search', function(req, res){
         var country = req.query.country, device = req.query.description
         util.getBugs(country,device, function(reply){
-            var html = Handlebars.compile(fs.readFileSync('./reply.html', 'utf8'))({
-                searchCriteria: req.query,
-                reply: reply
-            })
-            res.send(html)
+            console.log(reply.bugsProperties)
+                var html = Handlebars.compile(fs.readFileSync('./reply.html', 'utf8'))({
+                    searchCriteria: reply.searchCriterias,
+                    bugsProperties: reply.bugsProperties.split('\n').join('<br>')
+                })
+                res.send(html)
         })
     })
 }

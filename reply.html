@@ -1,10 +1,24 @@
 <!DOCTYPE HTML>
 <html>
 <head>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
 </head>
 <body>
     <div class="container">
-
+        <div class="row">
+            <div class="col-xs-12">
+                <label> Search Criteria:</label>
+                {{searchCriteria}}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-xs-12">
+                <label> Bugs properties:</label>
+                {{{bugsProperties}}}
+            </div>
+        </div>
     </div>
 
 </body>

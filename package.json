@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "async": "^2.1.2",
     "bootstrap": "^3.3.7",
     "bootstrap-multiselect": "^0.9.13-1",
     "csv-parser": "^1.11.0",
