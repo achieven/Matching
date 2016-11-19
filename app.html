@@ -10,7 +10,7 @@
 </head>
 <body>
 <div class="container">
-    <div class="row">
+    <div class="row {{showForm}}">
         <div class="col-xs-12">
             <form action="/search" method="get" id="search">
                 <h4>Please select the country:</h4>
@@ -31,6 +31,12 @@
                     <button type="submit" class="btn btn-info">Submit</button>
                 </div>
             </form>
+        </div>
+    </div>
+    <div class="row {{showError}}">
+        <div class="col-xs-12">
+            <label>Error:</label>
+            {{err}}
         </div>
     </div>
 </div>

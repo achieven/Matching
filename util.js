@@ -6,8 +6,8 @@ const _ = require('underscore')
 const async = require('async')
 
 const Handlebars = require('handlebars')
-Handlebars.registerHelper('equal', function(v1, v2, options) {
-    if(v1 === v2) {
+Handlebars.registerHelper('equal', function (v1, v2, options) {
+    if (v1 === v2) {
         return options.fn(this);
     }
     return options.inverse(this);
@@ -28,8 +28,6 @@ var util = {
                 dropTable('tester_device')
                 dropTable('bugs')
             }
-
-
             function createTables() {
                 var createTestersTableQuery = 'CREATE TABLE if not exists testers (testerId INTEGER NOT NULL PRIMARY KEY, firstName VARCHAR, lastName VARCHAR, country VARCHAR, lastLogin VARCHAR)'
                 var createDevicesTableQuery = 'CREATE TABLE if not exists devices (deviceId INTEGER NOT NULL PRIMARY KEY, description VARCHAR)'
@@ -44,7 +42,6 @@ var util = {
 
             dropTables()
             createTables()
-
         })
     },
     initializeTables: function () {
@@ -82,6 +79,7 @@ var util = {
     getFieldValues: function (field, table, callback) {
         var query = 'SELECT ' + field + ' FROM ' + table
         db.all(query, function (err, response) {
+            if (err) return callback(err)
             var uniqueProperties = _.uniq(response.map(function (value) {
                 return value[field]
             }))
@@ -90,12 +88,18 @@ var util = {
     },
     getValues: function (callback) {
         async.parallel([
-            this.getFieldValues.bind(null, 'country', 'testers'),
-            this.getFieldValues.bind(null, 'description', 'devices')
+            this.getFieldValues.bind(this, 'country', 'testers'),
+            this.getFieldValues.bind(this, 'description', 'devices')
         ], function (err, results) {
-            if (err) return callback(err)
-            callback(results)
+            if(err) return callback(err)
+            callback(null, results)
         })
+    },
+    getAllValues: function(callback){
+        async.waterfall([
+            this.getValues.bind(this),
+            this.showPropertiesOnScreen.bind(this, 'app')
+        ], this.mainCallback.bind(this, callback))
     },
     selectorQuery: function (table, field, values) {
         if (values === 'All') {
@@ -127,6 +131,7 @@ var util = {
         }
         else {
             thisObject.getFieldValues(field, table, function (err, queryValues) {
+                if (err) return callback(err)
                 if (_.isEqual(queryValues, values)) {
                     fieldSearchCriteria += '"All"'
                     callback(null, fieldSearchCriteria)
@@ -148,25 +153,27 @@ var util = {
     getSearchCriterias: function (testerCountry, deviceDescription, callback) {
         async.parallel([
             this.getSearchCriteria.bind(this, 'country', 'testers', testerCountry, 'Country'),
-            this.getSearchCriteria.bind(this, 'country', 'testers', deviceDescription,  'Device')
-        ], function(err, results){
-            if(err) return callback(err)
+            this.getSearchCriteria.bind(this, '123', 'devices', deviceDescription, 'Device')
+        ], function (err, results) {
+            if (err) return callback(err)
             var criteriasForPresentation = ''
-            results.forEach(function(criteria, index){
+            results.forEach(function (criteria, index) {
                 criteriasForPresentation += criteria
-                if(index < results.length -1) {
+                if (index < results.length - 1) {
                     criteriasForPresentation += ' and '
                 }
             })
-            callback(null, {header: 'Search Criteria:', text: criteriasForPresentation})
+            var searchCriteria = {searchCriteria: {header: 'Search Criteria:', text: criteriasForPresentation}}
+            callback(null, searchCriteria)
         })
     },
-    getMatches: function(allBugs, callback){
+    getMatches: function (allBugs, callback) {
         var bugsByTesters = {}
         var testersCounter = 0, testersNames = []
-        function createAllTestersObject(){
-            allBugs.forEach(function(bug){
-                if(!(bugsByTesters[bug.testerId])){
+
+        function createAllTestersObject() {
+            allBugs.forEach(function (bug) {
+                if (!(bugsByTesters[bug.testerId])) {
                     thisTester = {}
                     thisTester['name'] = bug.firstName + ' ' + bug.lastName
                     thisTester['bugsForDevices'] = {}
@@ -176,7 +183,7 @@ var util = {
                 }
                 else {
                     var thisTester = bugsByTesters[bug.testerId]
-                    if(!thisTester['bugsForDevices'][bug.description]){
+                    if (!thisTester['bugsForDevices'][bug.description]) {
                         thisTester['bugsForDevices'][bug.description] = 1
                     }
                     else {
@@ -187,10 +194,10 @@ var util = {
             })
             return bugsByTesters
         }
-        
-        function bugsByTestersBody (bugsByTesters){
+
+        function bugsByTestersBody(bugsByTesters) {
             var bugsByTestersBody = ''
-            for(var testerId in bugsByTesters){
+            for (var testerId in bugsByTesters) {
                 testersCounter++
                 var thisTester = bugsByTesters[testerId]
                 var testerName = thisTester.name
@@ -199,12 +206,12 @@ var util = {
                 var bugsByTesterForDevices = ''
                 var testerBugsPerDevice = thisTester['bugsForDevices']
                 var testerDevices = Object.keys(testerBugsPerDevice)
-                testerDevices.forEach(function(device, index){
+                testerDevices.forEach(function (device, index) {
                     bugsByTesterForDevices += testerBugsPerDevice[device] + ' bugs for ' + device
-                    if(index < testerDevices.length - 1){
+                    if (index < testerDevices.length - 1) {
                         bugsByTesterForDevices += ' and '
                     }
-                    if(index === testerDevices.length - 1){
+                    if (index === testerDevices.length - 1) {
                         bugsByTesterForDevices += '.<br>' + thisTester.totalBugs + ' bugs filed for devices in search.<br>'
                     }
                 })
@@ -212,37 +219,40 @@ var util = {
             }
             return bugsByTestersBody
         }
-        
-        
-        function bugsByTestersPrefixSuffix(){
+
+        function bugsByTestersPrefixSuffix() {
             var testersNamesPreffix = ''
             var testersNameSuffix = ''
-            testersNames.forEach(function(tester, index){
+            testersNames.forEach(function (tester, index) {
                 testersNamesPreffix += tester
                 testersNameSuffix += tester
-                if(index < testersNames.length -1) {
+                if (index < testersNames.length - 1) {
                     testersNamesPreffix += ' and '
                     testersNameSuffix += ', '
                 }
             })
-            return {prefix: testersCounter + ' testers (' + testersNamesPreffix + ')', suffix: testersNameSuffix}
+            return {matches: testersCounter + ' testers (' + testersNamesPreffix + ')', results: testersNameSuffix}
         }
+
         var bugsByTesters = createAllTestersObject()
         var bugsByTestersBody = bugsByTestersBody(bugsByTesters)
         bugsByTestersPrefixSuffix = bugsByTestersPrefixSuffix()
-        callback(null, {prefix: {header: 'Matches:', text: bugsByTestersPrefixSuffix.prefix}, body: {header: '', text: bugsByTestersBody}, suffix: {header: 'Results:', text: bugsByTestersPrefixSuffix.suffix}})
+        callback(null, {
+            matches: {header: 'Matches:', text: bugsByTestersPrefixSuffix.matches},
+            body: {header: '', text: bugsByTestersBody},
+            results: {header: 'Results:', text: bugsByTestersPrefixSuffix.results}
+        })
     },
-    getBugsProperties: function(testerCountry, deviceDescription, allBugs, callback){
+    getBugsPresentation: function (testerCountry, deviceDescription, allBugs, callback) {
         async.parallel([
             this.getSearchCriterias.bind(this, testerCountry, deviceDescription),
-            this.getMatches.bind(this,allBugs)
-        ], function(err, results){
-            if(err) return callback(err)
+            this.getMatches.bind(this, allBugs)
+        ], function (err, results) {
+            if (err) return callback(err)
             callback(null, results)
         })
     },
     getBugsFromDB: function (testerCountry, deviceDescription, callback) {
-        var mandatorySelectionQuery = 'SELECT testers.country, devices.description, bugs.testerId, bugs.deviceId FROM testers, devices, bugs WHERE bugs.testerId=testers.testerId AND bugs.deviceId=devices.deviceId'
         var countrySelectorQuery = this.selectorQuery('testers', 'country', testerCountry)
         var deviceSelectorQuery = this.selectorQuery('devices', 'description', deviceDescription)
         var bugsQuery = 'SELECT testers.country, testers.firstName, testers.lastName, devices.description, bugs.testerId, bugs.deviceId FROM testers, devices, bugs WHERE bugs.testerId=testers.testerId AND bugs.deviceId=devices.deviceId ' + countrySelectorQuery + deviceSelectorQuery
@@ -254,15 +264,44 @@ var util = {
     getBugs: function (testerCountry, deviceDescription, callback) {
         async.waterfall([
             this.getBugsFromDB.bind(this, testerCountry, deviceDescription),
-            this.getBugsProperties.bind(this)
-        ], function (err, results) {
-            if(err) return callback(err)
-            response = {
-                searchCriterias: results[0],
-                bugsProperties: results[1]
+            this.getBugsPresentation.bind(this),
+            this.showPropertiesOnScreen.bind(this, 'reply')
+        ], this.mainCallback.bind(this, callback))
+    },
+    showPropertiesOnScreen: function (page, results, callback) {
+        var properties
+        switch (page) {
+            case 'app':
+                properties = {
+                    countries: results[0],
+                    devices: results[1],
+                    showError: 'hide'
+                }
+                break
+            case 'reply':
+                properties = {
+                    searchCriteria: results[0].searchCriteria,
+                    matches: results[1].matches,
+                    body: results[1].body,
+                    results: results[1].results,
+                    showError: 'hide'
+                }
+                break
+            default:
+                break
+        }
+        callback(null, 200, properties)
+    },
+    mainCallback: function (callback, err, status, properties) {
+        if (err) {
+            status = 500
+            var properties = {
+                err: 'Internal server error. We are working on getting it fixed. Thank you!',
+                showForm: 'hide'
             }
-            callback(response)
-        })
+            return callback(status, properties)
+        }
+        callback(status, properties)
     }
 }
 

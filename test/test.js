@@ -119,15 +119,53 @@ describe('getFieldValues', function () {
             done()
         })
     })
+    it('should return error if bad parameters were sent to the function (e.g field or table misspelling)', function (done) {
+        async.parallel([
+            function (callback) {
+                util.getFieldValues('wrongDescription', 'devices', function (err, response) {
+                    expect(err).to.be.a('error')
+                    expect(err.code).to.be.equal('SQLITE_ERROR')
+                    expect(err.message).to.be.equal('SQLITE_ERROR: no such column: wrongDescription')
+                    expect(err.errno).to.be.equal(1)
+                    expect(response).to.be.undefined
+                    callback(null)
+                })
+            }, function (callback) {
+                util.getFieldValues('description', 'wrongDevices', function (err, response) {
+                    expect(err).to.be.a('error')
+                    expect(err.code).to.be.equal('SQLITE_ERROR')
+                    expect(err.message).to.be.equal('SQLITE_ERROR: no such table: wrongDevices')
+                    expect(err.errno).to.be.equal(1)
+                    expect(response).to.be.undefined
+                    callback(null)
+                })
+            }
+        ], function (err, response) {
+            done()
+        })
+    })
 })
 
 describe('getValues', function () {
     it('should return 2 arrays - of unique countries and unique descriptions', function (done) {
-        util.getValues(function (results) {
+        util.getValues(function (err, results) {
+            expect(err).to.be.null
             expect(results).to.be.a('array')
             expect(results.length).to.be.equal(2)
             expect(results[0]).to.eql(allCountries)
             expect(results[1]).to.eql(allDescriptions)
+            done()
+        })
+    })
+})
+
+describe('getAllValues', function () {
+    it('should', function (done) {
+        util.getAllValues(function (status, results) {
+            expect(status).to.be.equal(200)
+            expect(results).to.be.a('object')
+            expect(results.countries).to.eql(allCountries)
+            expect(results.devices).to.eql(allDescriptions)
             done()
         })
     })
@@ -196,14 +234,43 @@ describe('getSearchCriteria', function () {
             done()
         })
     })
+    it('should return error if bad parameters were sent to the function (e.g field or table misspelling)', function (done) {
+        async.parallel([
+            function (callback) {
+                util.getSearchCriteria('country', 'wrongTable', ['US', 'JP'], 'Country', function (err, response) {
+                    expect(err).to.be.a('error')
+                    expect(err.code).to.be.equal('SQLITE_ERROR')
+                    expect(err.message).to.be.equal('SQLITE_ERROR: no such table: wrongTable')
+                    expect(err.errno).to.be.equal(1)
+                    expect(response).to.be.undefined
+                    callback(null)
+                })
+            },
+            function (callback) {
+                util.getSearchCriteria('wrongColumn', 'testers', ['US', 'JP'], 'Country', function (err, response) {
+                    expect(err).to.be.a('error')
+                    expect(err.code).to.be.equal('SQLITE_ERROR')
+                    expect(err.message).to.be.equal('SQLITE_ERROR: no such column: wrongColumn')
+                    expect(err.errno).to.be.equal(1)
+                    expect(response).to.be.undefined
+                    callback(null)
+                })
+            },
+        ], function (err, response) {
+            done()
+        })
+
+    })
 })
 
 describe('getSearchCriterias', function () {
     it('should return string concatenation of getSearchCriterias', function (done) {
         util.getSearchCriterias('US', 'iPhone 4', function (err, response) {
             expect(err).to.be.null
-            expect(response.header).to.be.equal('Search Criteria:')
-            expect(response.text).to.be.equal('Country="US" and Device="iPhone 4"')
+            expect(response).to.be.a('object')
+            expect(response.searchCriteria).to.be.a('object')
+            expect(response.searchCriteria.header).to.be.equal('Search Criteria:')
+            expect(response.searchCriteria.text).to.be.equal('Country="US" and Device="iPhone 4"')
             done()
         })
     })
@@ -256,23 +323,21 @@ describe('getMatches', function () {
         util.getMatches(allBugs, function (err, bugsByTestersPresentation) {
             expect(err).to.be.null
             expect(bugsByTestersPresentation).to.be.a('object')
-            expect(bugsByTestersPresentation.prefix).to.be.a('object')
-            expect(bugsByTestersPresentation.prefix.header).to.be.equal('Matches:')
-            expect(bugsByTestersPresentation.prefix.text).to.be.equal('2 testers (a1 b1 and a2 b2)')
+            expect(bugsByTestersPresentation.matches).to.be.a('object')
+            expect(bugsByTestersPresentation.matches.header).to.be.equal('Matches:')
+            expect(bugsByTestersPresentation.matches.text).to.be.equal('2 testers (a1 b1 and a2 b2)')
             expect(bugsByTestersPresentation.body).to.be.a('object')
             expect(bugsByTestersPresentation.body.header).to.be.equal('')
             expect(bugsByTestersPresentation.body.text).to.be.equal('a1 b1 filed 2 bugs for Galaxy S4 and 1 bugs for Galaxy S5 and 1 bugs for iPhone 5.<br>4 bugs filed for devices in search.<br>a2 b2 filed 1 bugs for Galaxy S4.<br>1 bugs filed for devices in search.<br>')
-            expect(bugsByTestersPresentation.suffix).to.be.a('object')
-            expect(bugsByTestersPresentation.suffix.header).to.be.equal('Results:')
-            expect(bugsByTestersPresentation.suffix.text).to.be.equal('a1 b1, a2 b2')
-            
-
+            expect(bugsByTestersPresentation.results).to.be.a('object')
+            expect(bugsByTestersPresentation.results.header).to.be.equal('Results:')
+            expect(bugsByTestersPresentation.results.text).to.be.equal('a1 b1, a2 b2')
             done()
         })
     })
 })
 
-describe('getBugsProperties', function () {
+describe('getBugsPresentation', function () {
     it('should return the searchCriterias and the bugsProperties without any connection to the passed parameters (e.g testerCountry, deviceDescription, allBugs)', function (done) {
         var allBugs = [
             {
@@ -317,42 +382,111 @@ describe('getBugsProperties', function () {
             }
         ]
         var testerCountry = 'US', deviceDescription = 'iPhone 5'
-        util.getBugsProperties(testerCountry, deviceDescription, allBugs, function (err, response) {
+        util.getBugsPresentation(testerCountry, deviceDescription, allBugs, function (err, response) {
             expect(err).to.be.null
             expect(response).to.be.a('array')
             expect(response.length).to.be.equal(2)
-            expect(response[0].header).to.be.equal('Search Criteria:')
-            expect(response[0].text).to.be.equal('Country="US" and Device="iPhone 5"')
-            expect(response[1].prefix).to.be.a('object')
-            expect(response[1].prefix.header).to.be.equal('Matches:')
-            expect(response[1].prefix.text).to.be.equal('2 testers (a1 b1 and a2 b2)')
+            expect(response[0].searchCriteria).to.be.a('object')
+            expect(response[0].searchCriteria.header).to.be.equal('Search Criteria:')
+            expect(response[0].searchCriteria.text).to.be.equal('Country="US" and Device="iPhone 5"')
+            expect(response[1].matches).to.be.a('object')
+            expect(response[1].matches.header).to.be.equal('Matches:')
+            expect(response[1].matches.text).to.be.equal('2 testers (a1 b1 and a2 b2)')
             expect(response[1].body).to.be.a('object')
             expect(response[1].body.header).to.be.equal('')
             expect(response[1].body.text).to.be.equal('a1 b1 filed 2 bugs for Galaxy S4 and 1 bugs for Galaxy S5 and 1 bugs for iPhone 5.<br>4 bugs filed for devices in search.<br>a2 b2 filed 1 bugs for Galaxy S4.<br>1 bugs filed for devices in search.<br>')
-            expect(response[1].suffix).to.be.a('object')
-            expect(response[1].suffix.header).to.be.equal('Results:')
-            expect(response[1].suffix.text).to.be.equal('a1 b1, a2 b2')
+            expect(response[1].results).to.be.a('object')
+            expect(response[1].results.header).to.be.equal('Results:')
+            expect(response[1].results.text).to.be.equal('a1 b1, a2 b2')
             done()
         })
     })
 })
 
-describe('getBugs', function(){
-    it('should return the response as an object with the searchCriterias and bugsProperties as keys', function(done){
-        util.getBugs('US', 'iPhone 5', function(response){
+describe('getBugs', function () {
+    it('should return the response as an object with the searchCriterias and bugsProperties as keys', function (done) {
+        util.getBugs('US', 'iPhone 5', function (status, response) {
+            expect(status).to.be.equal(200)
             expect(response).to.be.a('object')
-            expect(response.searchCriterias.header).to.be.equal('Search Criteria:')
-            expect(response.searchCriterias.text).to.be.equal('Country="US" and Device="iPhone 5"')
-            expect(response.bugsProperties.prefix).to.be.a('object')
-            expect(response.bugsProperties.prefix.header).to.be.equal('Matches:')
-            expect(response.bugsProperties.prefix.text).to.be.equal('1 testers (Miguel Bautista)')
-            expect(response.bugsProperties.body).to.be.a('object')
-            expect(response.bugsProperties.body.header).to.be.equal('')
-            expect(response.bugsProperties.body.text).to.be.equal('Miguel Bautista filed 30 bugs for iPhone 5.<br>30 bugs filed for devices in search.<br>')
-            expect(response.bugsProperties.suffix).to.be.a('object')
-            expect(response.bugsProperties.suffix.header).to.be.equal('Results:')
-            expect(response.bugsProperties.suffix.text).to.be.equal('Miguel Bautista')
+            expect(response.searchCriteria).to.be.a('object')
+            expect(response.searchCriteria.header).to.be.equal('Search Criteria:')
+            expect(response.searchCriteria.text).to.be.equal('Country="US" and Device="iPhone 5"')
+            expect(response.matches).to.be.a('object')
+            expect(response.matches.header).to.be.equal('Matches:')
+            expect(response.matches.text).to.be.equal('1 testers (Miguel Bautista)')
+            expect(response.body).to.be.a('object')
+            expect(response.body.header).to.be.equal('')
+            expect(response.body.text).to.be.equal('Miguel Bautista filed 30 bugs for iPhone 5.<br>30 bugs filed for devices in search.<br>')
+            expect(response.results).to.be.a('object')
+            expect(response.results.header).to.be.equal('Results:')
+            expect(response.results.text).to.be.equal('Miguel Bautista')
             done()
         })
+    })
+})
+describe('showPropertiesOnScreen', function () {
+    it('should have status 200 and properties of app when app option is sent (initial rendering)', function () {
+        util.showPropertiesOnScreen('app', [allCountries, allDescriptions], function (err, status, properties) {
+            expect(err).to.be.null
+            expect(status).to.be.equal(200)
+            expect(properties).to.eql({
+                countries: allCountries,
+                devices: allDescriptions,
+                showError: 'hide'
+            })
+        })
+    })
+    it('should have status 200 and properties of reply when reply option is sent (response of query)', function () {
+        var response = [
+            {
+                searchCriteria: {
+                    header: 'Search Criteria:',
+                    text: 'Country="GB" and Device="All"'
+                }
+            },
+            {
+                matches: {
+                    header: 'Matches:',
+                    text: '3 testers (Leonard Sutton and Stanley Chen and Darshini Thiagarajan)'
+                },
+                body: {
+                    header: '',
+                    text: 'Leonard Sutton filed 27 bugs for Nexus 4 and 32 bugs for iPhone 5 and 28 bugs for Galaxy S3 and 19 bugs for Galaxy S4.<br>106 bugs filed for devices in search.<br>Stanley Chen filed 110 bugs for iPhone 5.<br>110 bugs filed for devices in search.<br>Darshini Thiagarajan filed 25 bugs for Droid DNA and 30 bugs for HTC One and 21 bugs for Galaxy S4 and 28 bugs for Nexus 4.<br>104 bugs filed for devices in search.<br>'
+                },
+                results: {
+                    header: 'Results:',
+                    text: 'Leonard Sutton, Stanley Chen, Darshini Thiagarajan'
+                }
+            }]
+        util.showPropertiesOnScreen('reply', response, function (err, status, properties) {
+            expect(err).to.be.null
+            expect(status).to.be.equal(200)
+            expect(properties).to.eql({
+                searchCriteria: response[0].searchCriteria,
+                matches: response[1].matches,
+                body: response[1].body,
+                results: response[1].results,
+                showError: 'hide'
+            })
+        })
+    })
+})
+
+describe('mainCallback', function () {
+    it('should return status 500 and error mesage if err was passed', function () {
+        util.mainCallback(function (status, properties) {
+            expect(status).to.be.equal(500)
+            expect(properties).to.be.a('object')
+            expect(properties.err).to.be.equal('Internal server error. We are working on getting it fixed. Thank you!')
+            expect(properties.showForm).to.be.equal('hide')
+        }, 'err', 'doesnt matter', 'doesnt matter')
+    })
+    it('should return status 200 and properties to render if err was not passed', function () {
+        var status = 200
+        var properties = 'properties'
+        util.mainCallback(function (status, properties) {
+            expect(status).to.be.equal(status)
+            expect(properties).to.be.equal(properties)
+        }, null, status, properties)
     })
 })

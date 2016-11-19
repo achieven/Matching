@@ -12,10 +12,15 @@
         <div class="col-xs-12">
             <u>{{this.header}}</u>
             {{{this.text}}}
-
         </div>
     </div>
     {{/each}}
+    <div class="row {{showError}}">
+        <div class="col-xs-12">
+            <label>Error in request:</label>
+            {{err}}
+        </div>
+    </div>
 
 </div>
 
