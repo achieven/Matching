@@ -153,7 +153,7 @@ var util = {
     getSearchCriterias: function (testerCountry, deviceDescription, callback) {
         async.parallel([
             this.getSearchCriteria.bind(this, 'country', 'testers', testerCountry, 'Country'),
-            this.getSearchCriteria.bind(this, '123', 'devices', deviceDescription, 'Device')
+            this.getSearchCriteria.bind(this, 'description', 'devices', deviceDescription, 'Device')
         ], function (err, results) {
             if (err) return callback(err)
             var criteriasForPresentation = ''
