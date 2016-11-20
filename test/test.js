@@ -9,7 +9,7 @@ const allDescriptions = ['iPhone 4', 'iPhone 4S', 'iPhone 5', 'Galaxy S3', 'Gala
 
 
 describe('initalizeDB', function () {
-    it('should initialize 4 new tables', function (done) {
+    it('should initialize 3 new tables', function (done) {
         util.initializeDB()
         setTimeout(function () {
             async.parallel([
@@ -22,12 +22,6 @@ describe('initalizeDB', function () {
                 }, function (callback) {
                     var checkDevicesTableExistsQuery = 'SELECT * FROM devices'
                     db.all(checkDevicesTableExistsQuery, function (err, reply) {
-                        expect(reply).to.eql([])
-                        callback(null)
-                    })
-                }, function (callback) {
-                    var checkTesterDeviceTableExistsQuery = 'SELECT * FROM tester_device'
-                    db.all(checkTesterDeviceTableExistsQuery, function (err, reply) {
                         expect(reply).to.eql([])
                         callback(null)
                     })
@@ -72,16 +66,6 @@ describe('initializeTables', function () {
                         reply.forEach(function (row) {
                             expect(row.deviceId).to.be.a('number')
                             expect(row.description).to.be.a('string')
-                        })
-                        callback(null)
-                    })
-                }, function (callback) {
-                    var checkTesterDeviceTableExistsQuery = 'SELECT * FROM tester_device'
-                    db.all(checkTesterDeviceTableExistsQuery, function (err, reply) {
-                        expect(reply.length).to.be.equal(36)
-                        reply.forEach(function (row) {
-                            expect(row.testerId).to.be.a('number')
-                            expect(row.deviceId).to.be.a('number')
                         })
                         callback(null)
                     })
@@ -281,57 +265,57 @@ describe('getMatches', function () {
         var allBugs = [
             {
                 country: 'doesnt matter',
-                firstName: 'a1',
-                lastName: 'b1',
+                firstName: 'Miguel',
+                lastName: 'Bautista',
                 description: 'Galaxy S4',
                 testerId: 1,
                 deviceId: 'doesnt matter'
             },
             {
                 country: 'doesnt matter',
-                firstName: 'a1',
-                lastName: 'b1',
+                firstName: 'Miguel',
+                lastName: 'Bautista',
                 description: 'Galaxy S4',
                 testerId: 1,
                 deviceId: 'doesnt matter'
             },
             {
                 country: 'doesnt matter',
-                firstName: 'a1',
-                lastName: 'b1',
+                firstName: 'Miguel',
+                lastName: 'Bautista',
                 description: 'Galaxy S5',
                 testerId: 1,
                 deviceId: 'doesnt matter'
             },
             {
                 country: 'doesnt matter',
-                firstName: 'a1',
-                lastName: 'b1',
+                firstName: 'Miguel',
+                lastName: 'Bautista',
                 description: 'iPhone 5',
                 testerId: 1,
                 deviceId: 'doesnt matter'
             },
             {
                 country: 'doesnt matter',
-                firstName: 'a2',
-                lastName: 'b2',
+                firstName: 'Michael',
+                lastName: 'Lubavin',
                 description: 'Galaxy S4',
                 testerId: 2,
                 deviceId: 'doesnt matter'
             }
         ]
-        util.getMatches(allBugs, function (err, bugsByTestersPresentation) {
+        util.getMatches(allBugs, 'US', function (err, bugsByTestersPresentation) {
             expect(err).to.be.null
             expect(bugsByTestersPresentation).to.be.a('object')
             expect(bugsByTestersPresentation.matches).to.be.a('object')
             expect(bugsByTestersPresentation.matches.header).to.be.equal('Matches:')
-            expect(bugsByTestersPresentation.matches.text).to.be.equal('2 testers (a1 b1 and a2 b2)')
+            expect(bugsByTestersPresentation.matches.text).to.be.equal('3 testers (Miguel Bautista and Michael Lubavin and Taybin Rutkin)')
             expect(bugsByTestersPresentation.body).to.be.a('object')
             expect(bugsByTestersPresentation.body.header).to.be.equal('')
-            expect(bugsByTestersPresentation.body.text).to.be.equal('a1 b1 filed 2 bugs for Galaxy S4 and 1 bugs for Galaxy S5 and 1 bugs for iPhone 5.<br>4 bugs filed for devices in search.<br>a2 b2 filed 1 bugs for Galaxy S4.<br>1 bugs filed for devices in search.<br>')
+            expect(bugsByTestersPresentation.body.text).to.be.equal('Miguel Bautista filed 2 bugs for Galaxy S4 and 1 bug for Galaxy S5 and 1 bug for iPhone 5.<br>4 bugs filed for devices in search.<br>Michael Lubavin filed 1 bug for Galaxy S4.<br>1 bugs filed for devices in search.<br>Taybin Rutkin filed 0 bugs.<br>0 bugs filed for devices in search.<br>')
             expect(bugsByTestersPresentation.results).to.be.a('object')
             expect(bugsByTestersPresentation.results.header).to.be.equal('Results:')
-            expect(bugsByTestersPresentation.results.text).to.be.equal('a1 b1, a2 b2')
+            expect(bugsByTestersPresentation.results.text).to.be.equal('Miguel Bautista, Michael Lubavin, Taybin Rutkin')
             done()
         })
     })
@@ -342,40 +326,40 @@ describe('getBugsPresentation', function () {
         var allBugs = [
             {
                 country: 'doesnt matter',
-                firstName: 'a1',
-                lastName: 'b1',
+                firstName: 'Miguel',
+                lastName: 'Bautista',
                 description: 'Galaxy S4',
                 testerId: 1,
                 deviceId: 'doesnt matter'
             },
             {
                 country: 'doesnt matter',
-                firstName: 'a1',
-                lastName: 'b1',
+                firstName: 'Miguel',
+                lastName: 'Bautista',
                 description: 'Galaxy S4',
                 testerId: 1,
                 deviceId: 'doesnt matter'
             },
             {
                 country: 'doesnt matter',
-                firstName: 'a1',
-                lastName: 'b1',
+                firstName: 'Miguel',
+                lastName: 'Bautista',
                 description: 'Galaxy S5',
                 testerId: 1,
                 deviceId: 'doesnt matter'
             },
             {
                 country: 'doesnt matter',
-                firstName: 'a1',
-                lastName: 'b1',
+                firstName: 'Miguel',
+                lastName: 'Bautista',
                 description: 'iPhone 5',
                 testerId: 1,
                 deviceId: 'doesnt matter'
             },
             {
                 country: 'doesnt matter',
-                firstName: 'a2',
-                lastName: 'b2',
+                firstName: 'Michael',
+                lastName: 'Lubavin',
                 description: 'Galaxy S4',
                 testerId: 2,
                 deviceId: 'doesnt matter'
@@ -391,13 +375,13 @@ describe('getBugsPresentation', function () {
             expect(response[0].searchCriteria.text).to.be.equal('Country="US" and Device="iPhone 5"')
             expect(response[1].matches).to.be.a('object')
             expect(response[1].matches.header).to.be.equal('Matches:')
-            expect(response[1].matches.text).to.be.equal('2 testers (a1 b1 and a2 b2)')
+            expect(response[1].matches.text).to.be.equal('3 testers (Miguel Bautista and Michael Lubavin and Taybin Rutkin)')
             expect(response[1].body).to.be.a('object')
             expect(response[1].body.header).to.be.equal('')
-            expect(response[1].body.text).to.be.equal('a1 b1 filed 2 bugs for Galaxy S4 and 1 bugs for Galaxy S5 and 1 bugs for iPhone 5.<br>4 bugs filed for devices in search.<br>a2 b2 filed 1 bugs for Galaxy S4.<br>1 bugs filed for devices in search.<br>')
+            expect(response[1].body.text).to.be.equal('Miguel Bautista filed 2 bugs for Galaxy S4 and 1 bug for Galaxy S5 and 1 bug for iPhone 5.<br>4 bugs filed for devices in search.<br>Michael Lubavin filed 1 bug for Galaxy S4.<br>1 bugs filed for devices in search.<br>Taybin Rutkin filed 0 bugs.<br>0 bugs filed for devices in search.<br>')
             expect(response[1].results).to.be.a('object')
             expect(response[1].results.header).to.be.equal('Results:')
-            expect(response[1].results.text).to.be.equal('a1 b1, a2 b2')
+            expect(response[1].results.text).to.be.equal('Miguel Bautista, Michael Lubavin, Taybin Rutkin')
             done()
         })
     })
@@ -413,13 +397,13 @@ describe('getBugs', function () {
             expect(response.searchCriteria.text).to.be.equal('Country="US" and Device="iPhone 5"')
             expect(response.matches).to.be.a('object')
             expect(response.matches.header).to.be.equal('Matches:')
-            expect(response.matches.text).to.be.equal('1 testers (Miguel Bautista)')
+            expect(response.matches.text).to.be.equal('3 testers (Miguel Bautista and Michael Lubavin and Taybin Rutkin)')
             expect(response.body).to.be.a('object')
             expect(response.body.header).to.be.equal('')
-            expect(response.body.text).to.be.equal('Miguel Bautista filed 30 bugs for iPhone 5.<br>30 bugs filed for devices in search.<br>')
+            expect(response.body.text).to.be.equal('Miguel Bautista filed 30 bugs for iPhone 5.<br>30 bugs filed for devices in search.<br>Michael Lubavin filed 0 bugs.<br>0 bugs filed for devices in search.<br>Taybin Rutkin filed 0 bugs.<br>0 bugs filed for devices in search.<br>')
             expect(response.results).to.be.a('object')
             expect(response.results.header).to.be.equal('Results:')
-            expect(response.results.text).to.be.equal('Miguel Bautista')
+            expect(response.results.text).to.be.equal('Miguel Bautista, Michael Lubavin, Taybin Rutkin')
             done()
         })
     })
